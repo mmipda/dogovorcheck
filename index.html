@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ДоговорЧек</title>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap&subset=cyrillic">
+<style>
+/* Макет: слева текст договора с подсветкой, справа отчёт с нормами права; вкладки для модели эффекта и устройства системы */
+:root {
+  --bg: #f2f4f7;
+  --surface: #ffffff;
+  --ink: #16202a;
+  --muted: #566472;
+  --line: #d8dee5;
+  --accent: #1d4f80;
+  --accent-ink: #ffffff;
+  --danger: #b3261e;
+  --danger-bg: #fbe3e0;
+  --risk: #8f5600;
+  --risk-bg: #fbecc9;
+  --safe: #2b6a3d;
+  --safe-bg: #e1f0e4;
+  --f-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-doc: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11171c; --surface: #1a2229; --ink: #e5eaef; --muted: #98a6b3; --line: #2c3740;
+    --accent: #86b7e8; --accent-ink: #0d1c2b;
+    --danger: #ff9a92; --danger-bg: #3c1e1c; --risk: #f1bd62; --risk-bg: #3a2c0f; --safe: #86d398; --safe-bg: #1b3524;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11171c; --surface: #1a2229; --ink: #e5eaef; --muted: #98a6b3; --line: #2c3740;
+  --accent: #86b7e8; --accent-ink: #0d1c2b;
+  --danger: #ff9a92; --danger-bg: #3c1e1c; --risk: #f1bd62; --risk-bg: #3a2c0f; --safe: #86d398; --safe-bg: #1b3524;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1180px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.wrap > * { min-width: 0; }
+[hidden] { display: none !important; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+.brand h1 { font-family: var(--f-doc); font-size: 1.9rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; line-height: 1.1; }
+.brand p { margin: 4px 0 0; color: var(--muted); max-width: 60ch; text-wrap: balance; }
+nav[role="tablist"] { display: flex; gap: 4px; flex-wrap: wrap; }
+.tab { border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; border-radius: 6px; color: var(--muted); font-weight: 500; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+.notice { border: 1px solid var(--line); background: var(--surface); padding: 10px 14px; border-radius: 6px; color: var(--muted); font-size: 13.5px; }
+.notice b { color: var(--ink); font-weight: 600; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: 6px; font-weight: 500; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.spacer { flex: 1; }
+
+.summary { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; padding: 14px 16px; }
+.verdict { display: flex; flex-direction: column; gap: 2px; min-width: 200px; }
+.verdict small { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.verdict strong { font-family: var(--f-doc); font-size: 1.3rem; font-weight: 600; }
+.verdict[data-key="high"] strong { color: var(--danger); }
+.verdict[data-key="elevated"] strong { color: var(--danger); }
+.verdict[data-key="moderate"] strong { color: var(--risk); }
+.verdict[data-key="low"] strong { color: var(--safe); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: baseline; gap: 8px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); }
+.chip .n { font-family: var(--f-mono); font-weight: 500; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { border-width: 2px; padding: 5px 11px; }
+.chip.danger .n, .chip.danger { color: var(--danger); }
+.chip.risk .n, .chip.risk { color: var(--risk); }
+.chip.safe .n, .chip.safe { color: var(--safe); }
+.chip[aria-pressed="true"].danger { background: var(--danger-bg); border-color: var(--danger); }
+.chip[aria-pressed="true"].risk { background: var(--risk-bg); border-color: var(--risk); }
+.chip[aria-pressed="true"].safe { background: var(--safe-bg); border-color: var(--safe); }
+.chip span.l { color: var(--ink); font-size: 13.5px; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.cols > * { min-width: 0; }
+@media (max-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+
+.doc { padding: 22px clamp(16px, 4vw, 36px); font-family: var(--f-doc); font-size: 17px; line-height: 1.65; }
+.doc h3 { font-size: 1.02rem; font-weight: 600; margin: 22px 0 6px; font-family: var(--f-doc); }
+.doc h3:first-child { margin-top: 0; text-align: center; font-size: 1.15rem; text-wrap: balance; }
+.doc p { margin: 0 0 8px; text-wrap: pretty; }
+.s { cursor: default; border-radius: 3px; transition: background-color .15s; }
+.s.danger, .s.risk, .s.safe { cursor: pointer; }
+.show-danger .s.danger { background: var(--danger-bg); box-shadow: inset 0 -2px 0 var(--danger); }
+.show-risk .s.risk { background: var(--risk-bg); box-shadow: inset 0 -2px 0 var(--risk); }
+.show-safe .s.safe { background: var(--safe-bg); }
+.s mark { background: transparent; color: inherit; font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.show-danger .s.danger mark { text-decoration-color: var(--danger); }
+.show-risk .s.risk mark { text-decoration-color: var(--risk); }
+.s.active { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tag { font-family: var(--f-ui); font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: 2px; white-space: nowrap; }
+.tag.danger { color: var(--danger); border: 1px solid var(--danger); }
+.tag.risk { color: var(--risk); border: 1px dashed var(--risk); }
+.hide-danger .tag.danger, .hide-risk .tag.risk { display: none; }
+
+.editor { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.editor textarea { width: 100%; min-height: 420px; resize: vertical; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; font-family: var(--f-doc); font-size: 16px; line-height: 1.55; color: var(--ink); }
+.editor .hint { color: var(--muted); font-size: 13px; margin: 0; }
+
+.report { display: flex; flex-direction: column; gap: 12px; }
+.report h2, .block h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; margin: 0; }
+.card { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
+.card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card .head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.card .lvl { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.card .lvl.danger { color: var(--danger); border: 1px solid var(--danger); background: var(--danger-bg); }
+.card .lvl.risk { color: var(--risk); border: 1px dashed var(--risk); background: var(--risk-bg); }
+.card .ttl { font-weight: 600; flex: 1; min-width: 12ch; }
+.card .clause { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); }
+.card .quote { margin: 0; font-family: var(--f-doc); font-style: italic; color: var(--muted); font-size: 14.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card dl { margin: 0; display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 6px 10px; font-size: 14px; }
+.card dt { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding-top: 2px; }
+.card dd { margin: 0; overflow-wrap: anywhere; }
+.card dd.law { font-family: var(--f-mono); font-size: 12.5px; }
+.card .note { background: var(--danger-bg); color: var(--ink); border-left: 3px solid var(--danger); padding: 6px 10px; border-radius: 0 4px 4px 0; font-size: 14px; }
+@media (max-width: 520px) { .card dl { grid-template-columns: minmax(0, 1fr); } .card dt { padding-top: 6px; } }
+
+.empty { padding: 18px 16px; color: var(--muted); }
+.block { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.checks li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; }
+.checks .st { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 4px; height: fit-content; white-space: nowrap; }
+.checks .st.ok { color: var(--safe); border: 1px solid var(--safe); }
+.checks .st.bad { color: var(--risk); border: 1px dashed var(--risk); }
+.checks small { grid-column: 2; color: var(--muted); font-size: 12.5px; }
+
+/* Модель эффекта */
+.model { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; align-items: start; }
+.model > * { min-width: 0; }
+@media (max-width: 900px) { .model { grid-template-columns: minmax(0, 1fr); } }
+.ctl { display: flex; flex-direction: column; gap: 6px; }
+.ctl label { display: flex; justify-content: space-between; gap: 12px; font-weight: 500; }
+.ctl output { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.ctl small { color: var(--muted); }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.formula { font-family: var(--f-mono); font-size: 13.5px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; overflow-x: auto; white-space: pre; }
+.bars { display: flex; flex-direction: column; gap: 12px; }
+.bar { display: grid; gap: 4px; }
+.bar .lab { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.bar .lab b { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-weight: 500; }
+.bar .track { height: 18px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.bar .fill { height: 100%; background: var(--muted); }
+.bar.after .fill { background: var(--accent); }
+.chart { width: 100%; height: auto; display: block; }
+.chart text { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); }
+.chart .axis { stroke: var(--line); stroke-width: 1; fill: none; }
+.chart .ref { stroke: var(--line); stroke-width: 1.5; fill: none; }
+.chart .cur { stroke: var(--accent); stroke-width: 2.5; fill: none; }
+.chart .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.chart .lbl-cur { fill: var(--accent); font-weight: 500; }
+.assume { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.assume b { color: var(--ink); font-weight: 600; }
+
+/* Как устроено */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; white-space: nowrap; }
+td.mono { font-family: var(--f-mono); font-size: 12.5px; }
+.st2 { font-size: 12px; font-weight: 600; padding: 1px 6px; border-radius: 4px; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
+.st2.done { color: var(--safe); border: 1px solid var(--safe); }
+.st2.plan { color: var(--muted); border: 1px dashed var(--muted); }
+.limits { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; align-items: start; }
+.two > * { min-width: 0; }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>ДоговорЧек</h1>
+      <p>ИИ-ассистент для защиты заёмщиков. Находит в кредитном договоре скрытые комиссии, штрафы и односторонние условия и объясняет их простым языком.</p>
+    </div>
+    <nav role="tablist" aria-label="Разделы">
+      <button class="tab" role="tab" id="t-analyze" aria-selected="true" aria-controls="p-analyze">Анализ договора</button>
+      <button class="tab" role="tab" id="t-model" aria-selected="false" aria-controls="p-model">Модель эффекта</button>
+      <button class="tab" role="tab" id="t-arch" aria-selected="false" aria-controls="p-arch">Как устроено</button>
+    </nav>
+  </header>
+
+  <p class="notice"><b>Учебный прототип.</b> Это не юридическая консультация. В примере вымышленная организация. Текст обрабатывается в вашем браузере и никуда не отправляется.</p>
+
+  <!-- ===== Анализ ===== -->
+  <section id="p-analyze" role="tabpanel" aria-labelledby="t-analyze" class="wrap" style="gap:16px">
+    <div class="toolbar">
+      <button class="btn" id="btn-sample" type="button">Пример договора</button>
+      <button class="btn" id="btn-edit" type="button">Вставить свой текст</button>
+      <label class="btn" for="file-in" style="cursor:pointer">Загрузить .txt</label>
+      <input id="file-in" type="file" accept=".txt,text/plain" hidden>
+      <span class="spacer"></span>
+    </div>
+
+    <div class="panel summary" id="summary" aria-live="polite">
+      <div class="verdict" id="verdict" data-key="empty"><small>Итог проверки</small><strong id="verdict-text">—</strong></div>
+      <div class="chips" role="group" aria-label="Что подсвечивать">
+        <button class="chip danger" id="chip-danger" type="button" aria-pressed="true"><span class="n" id="n-danger">0</span><span class="l">опасных</span></button>
+        <button class="chip risk" id="chip-risk" type="button" aria-pressed="true"><span class="n" id="n-risk">0</span><span class="l">рискованных</span></button>
+        <button class="chip safe" id="chip-safe" type="button" aria-pressed="false"><span class="n" id="n-safe">0</span><span class="l">безопасных</span></button>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="panel" id="docpanel">
+        <div class="doc show-danger show-risk" id="doc"></div>
+        <div class="editor" id="editor" hidden>
+          <textarea id="src" spellcheck="false" aria-label="Текст договора" placeholder="Вставьте сюда текст кредитного договора"></textarea>
+          <p class="hint">Каждый пункт с новой строки. Для PDF и фото сначала получите текст (в планах: распознавание прямо в ассистенте).</p>
+          <div class="toolbar"><button class="btn primary" id="btn-run" type="button">Проанализировать</button><button class="btn" id="btn-cancel" type="button">Отмена</button></div>
+        </div>
+      </div>
+      <div class="report" id="report-col">
+        <h2>Что нашёл ассистент</h2>
+        <div id="cards" class="report"></div>
+        <div class="panel block" id="checks-block">
+          <h2>Обязательные элементы</h2>
+          <ul class="checks" id="checks"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Модель ===== -->
+  <section id="p-model" role="tabpanel" aria-labelledby="t-model" hidden class="wrap" style="gap:16px">
+    <div class="model">
+      <div class="panel block">
+        <h2>Параметры</h2>
+        <div class="ctl">
+          <label for="r-p"><span>Заёмщик замечает сам, P<sub>до</sub></span><output id="o-p" for="r-p"></output></label>
+          <input id="r-p" type="range" min="0" max="100" step="1" value="30">
+          <small>По оценке из статьи: около 30% опасных пунктов.</small>
+        </div>
+        <div class="ctl">
+          <label for="r-q"><span>Классификатор находит, Q</span><output id="o-q" for="r-q"></output></label>
+          <input id="r-q" type="range" min="0" max="100" step="1" value="90">
+          <small>Доля опасных пунктов, которые отмечает ассистент.</small>
+        </div>
+        <div class="formula" id="formula" aria-live="polite"></div>
+        <div class="bars">
+          <div class="bar before"><div class="lab"><span>Без ассистента</span><b id="b-before"></b></div><div class="track"><div class="fill" id="f-before"></div></div></div>
+          <div class="bar after"><div class="lab"><span>С ассистентом</span><b id="b-after"></b></div><div class="track"><div class="fill" id="f-after"></div></div></div>
+        </div>
+      </div>
+      <div class="panel block">
+        <h2>Доля выявленных рисков после внедрения</h2>
+        <svg class="chart" id="chart" viewBox="0 0 480 280" role="img" aria-label="График зависимости P после от Q"></svg>
+        <ul class="assume">
+          <li><b>Допущение 1.</b> Заёмщик и классификатор ошибаются независимо друг от друга.</li>
+          <li><b>Допущение 2.</b> Q означает полноту: долю опасных пунктов, которые классификатор находит. Это не общая точность на всех предложениях.</li>
+          <li><b>Допущение 3.</b> Заёмщик читает отчёт и учитывает все найденные пункты.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Как устроено ===== -->
+  <section id="p-arch" role="tabpanel" aria-labelledby="t-arch" hidden class="wrap" style="gap:16px">
+    <div class="panel block">
+      <h2>Компоненты из статьи и что уже работает</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Компонент</th><th>В прототипе</th><th>Статус</th></tr></thead>
+        <tbody>
+          <tr><td>Модуль сбора текста</td><td>Вставка текста и загрузка .txt. PDF, DOCX и фото в планах.</td><td><span class="st2 plan">В планах</span></td></tr>
+          <tr><td>Модуль предобработки</td><td>Разбор на пункты и предложения. Лемматизация и стоп-слова в планах.</td><td><span class="st2 done">Частично</span></td></tr>
+          <tr><td>Векторизатор</td><td>Шаблоны слов и оборотов (регулярные выражения). TF-IDF и эмбеддинги в планах.</td><td><span class="st2 plan">В планах</span></td></tr>
+          <tr><td>Классификатор</td><td>Три класса: безопасное, рискованное, опасное. Правила с проверкой контекста и отрицаний.</td><td><span class="st2 done">Работает</span></td></tr>
+          <tr><td>Интерфейс пользователя</td><td>Подсветка, пояснение простым языком, ссылка на норму права, что сделать.</td><td><span class="st2 done">Работает</span></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div class="two">
+      <div class="panel block">
+        <h2>Ограничения и риски</h2>
+        <ul class="limits">
+          <li>Ассистент не заменяет юриста и не гарантирует полноту.</li>
+          <li>Персональные данные: прототип не отправляет текст на сервер. В рабочей версии потребуется соответствие 152-ФЗ.</li>
+          <li>Объяснимость: для каждой находки показаны сработавшие слова, пояснение и норма права.</li>
+          <li>Недискриминация: алгоритм смотрит только на текст договора, не на возраст, пол и другие данные человека.</li>
+          <li>Правила написаны вручную и не проверены на размеченных юристами договорах. Точность прототипа не измерена.</li>
+        </ul>
+      </div>
+      <div class="panel block">
+        <h2>Следующий шаг: обучаемая модель</h2>
+        <ul class="limits">
+          <li>Разметка юристами фрагментов договоров на три класса.</li>
+          <li>Базовая модель: логистическая регрессия на TF-IDF.</li>
+          <li>Затем дообучение BERT-модели и сравнение по полноте и точности.</li>
+          <li>Правила остаются как слой проверки и источник пояснений.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="panel block">
+      <h2>Что проверяет прототип сейчас</h2>
+      <div class="table-wrap"><table id="rules-table">
+        <thead><tr><th>Класс</th><th>Условие</th><th>Норма права</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* Движок анализа кредитного договора: разбор на предложения, классификация, пояснения, нормы права. */
+(function (root) {
+  // JS \w не знает кириллицу, поэтому подменяем на класс букв Unicode
+  function R(src) { return new RegExp(src.replace(/\\w/g, '[\\p{L}\\d_]'), 'giu'); }
+  function RA(list) { return (list || []).map(R); }
+
+  var RULES = [
+    { id: 'unilateral', level: 'danger', title: 'Одностороннее изменение условий',
+      any: ['в одностороннем (?:внесудебном )?порядке'],
+      needs: ['измен|увелич|повыс|пересмотр|корректир|отказ|расторг|тариф|ставк|услови|лимит'],
+      not: ['не вправе|не имеет права|не может|(?:заёмщик|заемщик|клиент)\\w*[^.]{0,30}вправе'],
+      plain: 'Банк может поменять условия договора сам, не спрашивая вас. Ставка или тарифы могут вырасти уже после подписания.',
+      law: 'ст. 310 ГК РФ; ст. 29 ФЗ «О банках и банковской деятельности»; ст. 16 Закона РФ «О защите прав потребителей»',
+      advice: 'Потребуйте убрать пункт или записать, что любые изменения возможны только по письменному соглашению сторон.' },
+    { id: 'autoprolong', level: 'danger', title: 'Автоматическое продление',
+      any: ['автоматическ\\w+\\s+(?:пролонг|продл)\\w*', '(?:пролонг|продл)\\w+[^.]{0,50}автоматическ\\w+', 'считается\\s+(?:автоматически\\s+)?(?:продл[её]нн|пролонгирован)\\w+'],
+      not: ['не\\s+(?:пролонг|продл)|не подлежит'],
+      plain: 'Договор сам продлится на новый срок, если вы вовремя не откажетесь. Обязательства, проценты и комиссии продолжат начисляться.',
+      law: 'ст. 421, 422 ГК РФ; ст. 16 Закона РФ «О защите прав потребителей»',
+      advice: 'Уточните, как и когда отказаться. Лучше убрать автопродление или заменить его новым договором с вашей подписью.' },
+    { id: 'assignment', level: 'danger', title: 'Передача долга третьим лицам без согласия',
+      any: ['права\\s+\\(?требования\\)?|право\\s+требования|уступк\\w+|цесси\\w+|передать\\s+(?:свои\\s+)?права'],
+      needs: ['третьим\\s+лицам|любому\\s+третьему|третьему\\s+лицу|без\\s+(?:получения\\s+)?(?:согласия|уведомления)|любым\\s+лицам'],
+      not: ['только\\s+с\\s+(?:письменного\\s+)?согласи', 'не\\s+вправе'],
+      plain: 'Банк может продать ваш долг кому угодно, например коллекторам, и спрашивать вас не обязан.',
+      law: 'ст. 12 ФЗ № 353-ФЗ «О потребительском кредите (займе)»; ст. 388 ГК РФ',
+      advice: 'Потребуйте записать, что уступка допускается только лицам с лицензией и с вашего письменного согласия.' },
+    { id: 'direct-debit', level: 'danger', title: 'Списание денег без вашего распоряжения',
+      any: ['без\\s+(?:дополнительн\\w+\\s+)?(?:акцепта|распоряжени\\w+|согласи\\w+)\\s+(?:заёмщика|заемщика|клиента)', 'безакцептн\\w+', 'бесспорн\\w+', 'со\\s+всех\\s+(?:счетов|банковских\\s+счетов)', 'любых\\s+(?:счетов|банковских\\s+счетов)'],
+      needs: ['спис|взыск|удерж'],
+      not: ['не\\s+вправе|не\\s+допускается'],
+      plain: 'Банк вправе забирать деньги с ваших счетов, в том числе в других банках, без вашей команды.',
+      law: 'ст. 854 ГК РФ; ст. 16 Закона РФ «О защите прав потребителей»',
+      advice: 'Ограничьте списание счётом, который вы указали, и суммами очередных платежей.' },
+    { id: 'court-waiver', level: 'danger', title: 'Отказ от права обратиться в суд',
+      any: ['отказ\\w*\\s+от\\s+права\\s+(?:на\\s+)?(?:обращ\\w+\\s+в\\s+суд|судебн\\w+)', 'отказывается\\s+от\\s+права[^.]{0,60}(?:суд|оспар)', 'без\\s+права\\s+(?:оспаривания|обжалования)'],
+      plain: 'Вас просят заранее отказаться от защиты в суде. Такое условие не должно работать.',
+      law: 'ст. 46 Конституции РФ; ст. 16 Закона РФ «О защите прав потребителей»',
+      advice: 'Не подписывайте договор с таким пунктом. Условие, ущемляющее права потребителя, недействительно.' },
+    { id: 'early-repay', level: 'danger', title: 'Ограничения досрочного погашения',
+      any: ['досрочн\\w+\\s+(?:погашени|возврат|исполнени)\\w*'],
+      needs: ['запрещ|не\\s+допускается|только\\s+с\\s+согласи|не\\s+ранее|комисси|штраф|неустойк|плат[ауы]?\\s+за'],
+      not: ['без\\s+(?:взимания\\s+)?(?:комисси|штраф|неустойк)|не\\s+взима|вправе\\s+(?:полностью|частично|досрочно)'],
+      plain: 'Банк мешает или удорожает досрочное погашение, хотя по закону вы можете вернуть кредит раньше срока и сэкономить на процентах.',
+      law: 'ст. 11 ФЗ № 353-ФЗ «О потребительском кредите (займе)»',
+      advice: 'Потребуйте убрать комиссию и сроки-«заморозки». Достаточно уведомить банк заранее.' },
+    { id: 'commission', level: 'risk', title: 'Скрытые комиссии и платежи',
+      any: ['комисси\\w+', 'плат[ауе]\\w*\\s+за\\s+(?:выдач\\w+|рассмотрени\\w+|обслуживани\\w+|ведени\\w+\\s+ссудн|открыти\\w+|оформлени\\w+|подключени\\w+|снят\\w+)', 'ссудн\\w+\\s+сч[её]т\\w*'],
+      not: ['не\\s+взима\\w+|не\\s+начисля\\w+|не\\s+предусмотр\\w+|без\\s+(?:взимания\\s+)?комисси\\w+|отсутству\\w+|не\\s+облага\\w+|не\\s+вправе|бесплатн\\w+'],
+      plain: 'За обычные банковские действия с вас берут отдельные деньги. Они увеличивают реальную стоимость кредита.',
+      law: 'ст. 16 Закона РФ «О защите прав потребителей»; ст. 6 ФЗ № 353-ФЗ (полная стоимость кредита)',
+      advice: 'Спросите, за какую именно услугу платите, и пересчитайте полную стоимость кредита с учётом этой суммы.' },
+    { id: 'penalty', level: 'risk', title: 'Неустойка, штрафы, пени',
+      any: ['неустойк\\w+', 'штраф\\w*', '(?<![\\p{L}])пен(?:и|ей|ями|я)(?![\\p{L}])'],
+      not: ['не\\s+начисля\\w+|не\\s+взима\\w+|не\\s+применя\\w+|освобожда\\w+|без\\s+(?:комисси|штраф|неустойк)|не\\s+(?:может|вправе|будет)\\s+превыша\\w+'],
+      plain: 'За просрочку или нарушение условий вы заплатите дополнительно. Проверьте, насколько велик размер санкции.',
+      law: 'ч. 21 ст. 5 ФЗ № 353-ФЗ «О потребительском кредите (займе)»: неустойка не более 20% годовых при начислении процентов, или 0,1% в день, если проценты не начисляются',
+      advice: 'Посчитайте, сколько вы заплатите за неделю просрочки. Размер выше предела закона можно оспорить.' },
+    { id: 'addons', level: 'risk', title: 'Навязанные дополнительные услуги и страхование',
+      any: ['страхован\\w+', '(?:дополнительн\\w+|платн\\w+|сопутствующ\\w+)\\s+(?:услуг\\w+|пакет\\w*|опци\\w+|сервис\\w*)', '(?:смс|sms)[\\- ]?(?:информирован|оповещен)\\w+'],
+      needs: ['обязан|обязательн|услови\\w+\\s+(?:предоставления|выдачи)|является\\s+условием|подключ|стоимост|в\\s+размере|списыва|автоматическ'],
+      not: ['добровольн\\w+|вправе\\s+отказ\\w+|может\\s+отказаться|не\\s+является\\s+обязательн\\w+|не\\s+обусловлен'],
+      plain: 'Кредит выдают при условии, что вы купите страховку или платный пакет. Закон запрещает ставить покупку одной услуги в зависимость от другой.',
+      law: 'п. 2 ст. 16 Закона РФ «О защите прав потребителей»; специальные нормы ФЗ № 353-ФЗ о страховании',
+      advice: 'Проверьте, можно ли отказаться от услуги и как это повлияет на ставку. Страхование должно быть добровольным.' },
+    { id: 'rate-hike', level: 'risk', title: 'Повышение ставки при отказе от услуг',
+      any: ['(?:повыс|увелич|пересмотр)\\w+[^.]{0,30}(?:процентн\\w+\\s+)?ставк\\w+'],
+      needs: ['отказ|расторж|прекращени|не\\s+(?:продл|подтвержд|оформ|заключ|выполн|предостав)'],
+      plain: 'Если вы откажетесь от допуслуги, ставка вырастет. Это способ принудить к покупке.',
+      law: 'п. 2 ст. 16 Закона РФ «О защите прав потребителей»',
+      advice: 'Сравните ставку «с услугой» и «без услуги» и выясните, что выгоднее по полной стоимости.' },
+    { id: 'repay-order', level: 'risk', title: 'Неустойка гасится раньше долга',
+      any: ['в\\s+первую\\s+очередь[^.]{0,60}(?:неустойк|штраф|пен|комисси)', '(?:неустойк\\w+|штраф\\w*|пени|комисси\\w+)[^.]{0,60}в\\s+первую\\s+очередь'],
+      plain: 'Ваши платежи сначала уходят на штрафы, а основной долг и проценты гасятся позже. Долг растёт дольше.',
+      law: 'ст. 319 ГК РФ',
+      advice: 'Требуйте порядок по закону: сначала проценты и основной долг, неустойка в последнюю очередь.' },
+    { id: 'personal-data', level: 'risk', title: 'Широкое согласие на передачу данных',
+      any: ['персональн\\w+\\s+данн\\w+', 'сведени\\w+\\s+о\\s+(?:заёмщик|заемщик)\\w+', 'информаци\\w+\\s+о\\s+(?:заёмщик|заемщик)\\w+'],
+      needs: ['третьим\\s+лицам|коллектор|взыскател\\w+|любым\\s+лицам|любому\\s+лицу|партн[её]рам|без\\s+ограничени\\w+\\s+срока|бессрочн'],
+      plain: 'Ваши данные могут получить посторонние компании, и вы не узнаете, кто именно и на какой срок.',
+      law: 'ст. 9 ФЗ № 152-ФЗ «О персональных данных» (согласие должно быть конкретным, информированным и сознательным)',
+      advice: 'Ограничьте список получателей и срок согласия или откажитесь от согласия на передачу.' },
+    { id: 'jurisdiction', level: 'risk', title: 'Невыгодная подсудность',
+      any: ['по\\s+месту\\s+нахождения\\s+(?:банка|кредитора|займодавца|головного\\s+офиса)', 'третейск\\w+', 'в\\s+арбитражном\\s+суде'],
+      needs: ['суд|подсудн|спор'],
+      not: ['месту\\s+(?:жительства|нахождения)\\s+(?:заёмщика|заемщика)'],
+      plain: 'Судиться придётся там, где удобно банку, возможно, в другом городе.',
+      law: 'ст. 17 Закона РФ «О защите прав потребителей»; ст. 13 ФЗ № 353-ФЗ',
+      advice: 'Потребителю доступен иск по месту жительства. Попросите убрать пункт или заменить его.' },
+    { id: 'liability', level: 'risk', title: 'Банк снимает с себя ответственность',
+      any: ['(?:банк|кредитор|займодавец)\\w*\\s+не\\s+(?:несёт|несет|отвечает)\\s+(?:какой[\\- ]либо\\s+)?(?:ответственност\\w*|за)', '(?:освобождается|освобождаются)\\s+от\\s+ответственности'],
+      needs: ['банк|кредитор|займодавец'],
+      not: ['форс|непреодолим'],
+      plain: 'Если банк ошибётся и вы потеряете деньги, возместить убытки он не обязан.',
+      law: 'ст. 400 ГК РФ; п. 1 ст. 16 Закона РФ «О защите прав потребителей»',
+      advice: 'Условие, которое лишает вас права на возмещение вреда, можно оспорить. Попросите его удалить.' },
+    { id: 'variable-rate', level: 'risk', title: 'Плавающая ставка',
+      any: ['(?:плавающ|перемен|изменяем)\\w+\\s+(?:процентн\\w+\\s+)?ставк\\w*', 'ставк\\w+\\s+(?:определяется|устанавливается)\\s+(?:банком|кредитором)'],
+      plain: 'Ставка не зафиксирована, и ежемесячный платёж может вырасти.',
+      law: 'ст. 9 ФЗ № 353-ФЗ «О потребительском кредите (займе)»; ст. 29 ФЗ «О банках и банковской деятельности»',
+      advice: 'Узнайте, от чего зависит ставка и есть ли верхняя граница. Уточните формулу расчёта.' },
+    { id: 'discretion', level: 'risk', title: 'Права банка «по своему усмотрению»',
+      any: ['по\\s+(?:своему|собственному)\\s+(?:усмотрению|решению)', 'без\\s+объяснения\\s+причин', 'без\\s+предварительн\\w+\\s+уведомлени\\w+'],
+      not: ['(?:заёмщик|заемщик|клиент)\\w*[^.]{0,20}вправе'],
+      plain: 'Банк действует по своему желанию и ничего не должен объяснять. Это позволяет ему менять правила.',
+      law: 'ст. 10 ГК РФ (недопустимость злоупотребления правом); ст. 16 Закона РФ «О защите прав потребителей»',
+      advice: 'Попросите перечень конкретных оснований вместо «по усмотрению».' },
+    { id: 'early-demand', level: 'risk', title: 'Досрочное требование долга по любому поводу',
+      any: ['(?:потребовать|требовать|востребовать)[^.]{0,40}досрочн\\w+'],
+      needs: ['(?:любого|любое|любом|одного|единичн\\w+|хотя\\s+бы)\\s+(?:нарушени|просрочк)|по\\s+(?:своему|собственному)\\s+усмотрению|без\\s+объяснения'],
+      plain: 'Банк может потребовать вернуть весь кредит сразу даже за мелкую просрочку.',
+      law: 'ч. 2 ст. 14 ФЗ № 353-ФЗ «О потребительском кредите (займе)» (досрочное требование допускается при просрочке свыше 60 дней в течение последних 180 дней)',
+      advice: 'Закрепите в договоре основания, предусмотренные законом.' },
+    { id: 'notice-site', level: 'risk', title: 'Уведомление через сайт банка',
+      any: ['размещени\\w+[^.]{0,50}(?:на\\s+сайте|на\\s+официальном\\s+сайте|в\\s+офисах)'],
+      needs: ['уведомл|считается\\s+извещ|вступа\\w+\\s+в\\s+силу'],
+      plain: 'Банк считает вас предупреждённым, если выложил информацию на своём сайте. Вы можете ничего не узнать.',
+      law: 'ст. 165.1 ГК РФ (юридически значимые сообщения); ст. 16 Закона РФ «О защите прав потребителей»',
+      advice: 'Потребуйте личное уведомление: SMS, письмо или сообщение в приложении.' }
+  ];
+  RULES.forEach(function (r) { r._any = RA(r.any); r._needs = RA(r.needs); r._not = RA(r.not); });
+
+  function firstMatchTest(res, text) { return res.some(function (re) { return text.search(re) >= 0; }); }
+
+  function spansOf(res, text) {
+    var out = [];
+    res.forEach(function (re) {
+      var n = 0;
+      for (var m of text.matchAll(re)) { if (m[0].length) out.push([m.index, m.index + m[0].length]); if (++n > 4) break; }
+    });
+    return out;
+  }
+  function merge(spans) {
+    spans.sort(function (a, b) { return a[0] - b[0]; });
+    var out = [];
+    spans.forEach(function (s) {
+      var last = out[out.length - 1];
+      if (last && s[0] <= last[1]) last[1] = Math.max(last[1], s[1]); else out.push([s[0], s[1]]);
+    });
+    return out;
+  }
+  // Спан ограничиваем 70 символами, чтобы подсвечивался ключевой оборот, а не всё предложение
+  function clip(spans) {
+    return spans.map(function (s) { return [s[0], Math.min(s[1], s[0] + 70)]; });
+  }
+
+  function num(s) { return parseFloat(String(s).replace(',', '.')); }
+
+  // Уточнение для неустойки: сравнение с пределом закона
+  function refinePenalty(text) {
+    var d = R('(\\d+(?:[.,]\\d+)?)\\s*%[^.]{0,80}?(?:за\\s+каждый\\s+(?:календарный\\s+)?день|в\\s+день|ежедневно)').exec(text)
+         || R('(?:за\\s+каждый\\s+(?:календарный\\s+)?день|в\\s+день|ежедневно)[^.]{0,80}?(\\d+(?:[.,]\\d+)?)\\s*%').exec(text);
+    if (d) {
+      var daily = num(d[1]);
+      if (daily > 0.0548) {
+        return { level: 'danger', title: 'Неустойка выше предела закона',
+          note: 'Размер неустойки ' + d[1] + '% в день ≈ ' + (daily * 365).toFixed(0) + '% годовых. Закон допускает не более 20% годовых (около 0,055% в день) при начислении процентов.' };
+      }
+    }
+    var y = /(\d+(?:[.,]\d+)?)\s*%\s*годовых/iu.exec(text);
+    if (y && num(y[1]) > 20) {
+      return { level: 'danger', title: 'Неустойка выше предела закона',
+        note: 'Размер ' + y[1] + '% годовых выше предела в 20% годовых.' };
+    }
+    return null;
+  }
+
+  function classify(text) {
+    var findings = [], level = 'safe';
+    RULES.forEach(function (r) {
+      if (!firstMatchTest(r._any, text)) return;
+      if (r._needs.length && !firstMatchTest(r._needs, text)) return;
+      if (r._not.length && firstMatchTest(r._not, text)) return;
+      var f = { rule: r.id, level: r.level, title: r.title, plain: r.plain, law: r.law, advice: r.advice,
+                spans: clip(spansOf(r._any, text)), note: null };
+      if (r.id === 'penalty') {
+        var ref = refinePenalty(text);
+        if (ref) { f.level = ref.level; f.title = ref.title; f.note = ref.note; }
+      }
+      findings.push(f);
+    });
+    findings.forEach(function (f) {
+      if (f.level === 'danger') level = 'danger';
+      else if (f.level === 'risk' && level !== 'danger') level = 'risk';
+    });
+    return { level: level, findings: findings };
+  }
+
+  var SPLIT = /(?<=[\p{L}\)»"%][.!?;])\s+(?=[А-ЯЁA-Z«"(])/u;
+
+  function analyze(raw) {
+    var lines = String(raw || '').replace(/\r/g, '').split('\n');
+    var blocks = [], id = 0;
+    var stats = { danger: 0, risk: 0, safe: 0, total: 0 };
+    lines.forEach(function (line) {
+      var t = line.trim();
+      if (!t) return;
+      var words = t.split(/\s+/).length;
+      var isHeading = !/[.!?;:]$/.test(t) && words <= 9 || /^\d+\.\s+[А-ЯЁ«"\s,\-]{3,}$/u.test(t);
+      if (isHeading) { blocks.push({ type: 'heading', text: t }); return; }
+      var parts = t.split(SPLIT);
+      var sentences = parts.map(function (p) {
+        var c = classify(p);
+        var s = { id: 's' + (++id), text: p, level: c.level, findings: c.findings };
+        stats[c.level]++; stats.total++;
+        return s;
+      });
+      blocks.push({ type: 'para', sentences: sentences });
+    });
+    var full = String(raw || '');
+    var checks = [
+      { ok: R('полн\\w+\\s+стоимост\\w+|(?<![\\p{L}])ПСК(?![\\p{L}])').test(full),
+        label: 'Указана полная стоимость кредита (ПСК)', law: 'ст. 6 ФЗ № 353-ФЗ: ПСК размещается в верхней части первой страницы договора' },
+      { ok: R('график\\w*\\s+(?:платеж|погашени)\\w+').test(full),
+        label: 'Есть ссылка на график платежей', law: 'ст. 6 ФЗ № 353-ФЗ: график платежей входит в индивидуальные условия' },
+      { ok: R('срок\\w*\\s+(?:кредита|займа|действия|возврата)|на\\s+срок').test(full),
+        label: 'Указан срок кредита', law: 'ст. 5 ФЗ № 353-ФЗ: срок — существенное индивидуальное условие' }
+    ];
+    var verdict;
+    if (stats.total === 0) verdict = { key: 'empty', text: 'Нет текста для анализа' };
+    else if (stats.danger >= 3 || (stats.danger >= 1 && stats.risk >= 3)) verdict = { key: 'high', text: 'Высокий уровень риска' };
+    else if (stats.danger >= 1 || stats.risk >= 3) verdict = { key: 'elevated', text: 'Повышенный уровень риска' };
+    else if (stats.risk >= 1) verdict = { key: 'moderate', text: 'Умеренный уровень риска' };
+    else verdict = { key: 'low', text: 'Рискованных условий не найдено' };
+    return { blocks: blocks, stats: stats, checks: checks, verdict: verdict };
+  }
+
+  root.ContractAnalyzer = { analyze: analyze, RULES: RULES };
+  if (typeof module !== 'undefined') module.exports = root.ContractAnalyzer;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+var SAMPLE = "ДОГОВОР ПОТРЕБИТЕЛЬСКОГО КРЕДИТА № 2026/10-417\nг. Москва\nООО МКК «Пример-Займ» (далее — Кредитор) и гражданин Российской Федерации (далее — Заёмщик) заключили настоящий Договор о нижеследующем.\n1. Предмет договора\n1.1. Кредитор предоставляет Заёмщику потребительский кредит в сумме 150 000 рублей на срок 12 месяцев.\n1.2. Процентная ставка составляет 29,9% годовых. Полная стоимость кредита указана на первой странице Договора.\n1.3. Погашение осуществляется равными платежами согласно графику платежей.\n1.4. Договор вступает в силу с момента передачи денежных средств Заёмщику.\n2. Платежи и комиссии\n2.1. За рассмотрение заявки и выдачу кредита Заёмщик уплачивает комиссию в размере 4% от суммы кредита.\n2.2. Комиссия за обслуживание счёта не взимается.\n2.3. Заключение договора страхования жизни является обязательным условием выдачи кредита.\n2.4. В случае отказа Заёмщика от дополнительных услуг Кредитор вправе повысить процентную ставку на 5 процентных пунктов.\n2.5. Суммы, поступившие от Заёмщика, направляются в первую очередь на погашение неустойки, затем процентов и основного долга.\n3. Просрочка и досрочное погашение\n3.1. За каждый день просрочки Заёмщик уплачивает неустойку в размере 0,5% от суммы просроченного платежа.\n3.2. Досрочное погашение кредита допускается не ранее чем через 6 месяцев и сопровождается комиссией в размере 3% от остатка долга.\n3.3. Кредитор вправе по своему усмотрению потребовать досрочного возврата кредита.\n4. Права Кредитора\n4.1. Кредитор вправе в одностороннем порядке изменить процентную ставку и размер тарифов, уведомив Заёмщика путём размещения информации на официальном сайте Кредитора.\n4.2. Кредитор вправе уступить права требования по Договору любым третьим лицам без согласия Заёмщика.\n4.3. Кредитор вправе списывать любые суммы задолженности со всех счетов Заёмщика без дополнительного распоряжения Заёмщика.\n4.4. Договор автоматически продлевается на каждый следующий срок, если ни одна из сторон не заявит о расторжении за 30 дней.\n5. Прочие условия\n5.1. Заёмщик даёт согласие на передачу своих персональных данных третьим лицам, в том числе взыскателям, на бессрочной основе.\n5.2. Кредитор не несёт ответственности за убытки Заёмщика, возникшие в связи с исполнением Договора.\n5.3. Споры по Договору разрешаются в суде по месту нахождения Кредитора.\n5.4. Заёмщик вправе досрочно вернуть кредит полностью или частично без комиссий и штрафов, уведомив Кредитора за 30 дней.\n5.5. Заёмщик вправе отказаться от договора страхования в течение 14 дней.";
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var A = window.ContractAnalyzer;
+  var LV = { danger: 'Опасно', risk: 'Риск' };
+  var state = { raw: SAMPLE, result: null, active: null };
+
+  // ---------- вкладки ----------
+  var tabs = ['analyze', 'model', 'arch'];
+  tabs.forEach(function (k) {
+    $('t-' + k).addEventListener('click', function () {
+      tabs.forEach(function (j) {
+        $('t-' + j).setAttribute('aria-selected', String(j === k));
+        $('p-' + j).hidden = j !== k;
+      });
+    });
+  });
+
+  // ---------- анализ ----------
+  function mergeSpans(spans) {
+    spans = spans.slice().sort(function (a, b) { return a[0] - b[0]; });
+    var out = [];
+    spans.forEach(function (s) {
+      var l = out[out.length - 1];
+      if (l && s[0] <= l[1]) l[1] = Math.max(l[1], s[1]); else out.push([s[0], s[1]]);
+    });
+    return out;
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function clauseOf(text) {
+    var m = /^\s*(\d+(?:\.\d+)*)\.?\s/.exec(text);
+    return m ? 'п. ' + m[1] : '';
+  }
+
+  function renderDoc(res) {
+    var doc = $('doc');
+    doc.replaceChildren();
+    res.blocks.forEach(function (b) {
+      if (b.type === 'heading') { doc.appendChild(el('h3', null, b.text)); return; }
+      var p = el('p');
+      b.sentences.forEach(function (s, i) {
+        var sp = el('span', 's ' + s.level);
+        sp.id = s.id; sp.dataset.id = s.id;
+        var spans = mergeSpans([].concat.apply([], s.findings.map(function (f) { return f.spans; })));
+        var pos = 0;
+        spans.forEach(function (r) {
+          if (r[0] > pos) sp.appendChild(document.createTextNode(s.text.slice(pos, r[0])));
+          sp.appendChild(el('mark', null, s.text.slice(r[0], r[1])));
+          pos = r[1];
+        });
+        if (pos < s.text.length) sp.appendChild(document.createTextNode(s.text.slice(pos)));
+        if (s.level !== 'safe') sp.appendChild(el('span', 'tag ' + s.level, LV[s.level]));
+        if (s.level !== 'safe') sp.addEventListener('click', function () { activate(s.id, true); });
+        p.appendChild(sp);
+        if (i < b.sentences.length - 1) p.appendChild(document.createTextNode(' '));
+      });
+      doc.appendChild(p);
+    });
+  }
+
+  function renderCards(res) {
+    var box = $('cards');
+    box.replaceChildren();
+    var items = [];
+    res.blocks.forEach(function (b) {
+      if (b.type !== 'para') return;
+      b.sentences.forEach(function (s) {
+        s.findings.forEach(function (f) { items.push({ s: s, f: f }); });
+      });
+    });
+    items.sort(function (a, b) { return (a.f.level === 'danger' ? 0 : 1) - (b.f.level === 'danger' ? 0 : 1); });
+    if (!items.length) {
+      var e = el('div', 'panel empty', res.stats.total ? 'Рискованных условий не найдено. Это не гарантия: перед подписанием прочитайте договор целиком.' : 'Добавьте текст договора, чтобы получить отчёт.');
+      box.appendChild(e);
+      return;
+    }
+    items.forEach(function (it) {
+      var s = it.s, f = it.f;
+      var card = el('article', 'panel card');
+      card.dataset.id = s.id; card.dataset.level = f.level;
+      var head = el('div', 'head');
+      head.appendChild(el('span', 'lvl ' + f.level, LV[f.level]));
+      head.appendChild(el('span', 'ttl', f.title));
+      var c = clauseOf(s.text);
+      if (c) head.appendChild(el('span', 'clause', c));
+      card.appendChild(head);
+      var q = s.text.replace(/^\s*\d+(?:\.\d+)*\.?\s+/, '');
+      card.appendChild(el('p', 'quote', '«' + q + '»'));
+      if (f.note) card.appendChild(el('div', 'note', f.note));
+      var dl = el('dl');
+      var trig = f.spans.map(function (r) { return '«' + s.text.slice(r[0], r[1]).trim() + '»'; }).join(', ');
+      [['Сработало на', trig, ''], ['Простыми словами', f.plain, ''], ['Норма права', f.law, 'law'], ['Что сделать', f.advice, '']].forEach(function (r) {
+        if (!r[1]) return;
+        dl.appendChild(el('dt', null, r[0]));
+        dl.appendChild(el('dd', r[2], r[1]));
+      });
+      card.appendChild(dl);
+      card.addEventListener('click', function () { activate(s.id, false); });
+      box.appendChild(card);
+    });
+    applyFilter();
+  }
+
+  function renderChecks(res) {
+    var ul = $('checks');
+    ul.replaceChildren();
+    res.checks.forEach(function (c) {
+      var li = el('li');
+      li.appendChild(el('span', 'st ' + (c.ok ? 'ok' : 'bad'), c.ok ? 'Найдено' : 'Не найдено'));
+      li.appendChild(el('span', null, c.label));
+      li.appendChild(el('small', null, c.law));
+      ul.appendChild(li);
+    });
+  }
+
+  function renderSummary(res) {
+    $('verdict').dataset.key = res.verdict.key;
+    $('verdict-text').textContent = res.verdict.text;
+    $('n-danger').textContent = res.stats.danger;
+    $('n-risk').textContent = res.stats.risk;
+    $('n-safe').textContent = res.stats.safe;
+  }
+
+  function activate(id, fromDoc) {
+    var prev = document.querySelectorAll('.s.active, .card.active');
+    prev.forEach(function (n) { n.classList.remove('active'); });
+    state.active = id;
+    var s = document.getElementById(id);
+    if (s) s.classList.add('active');
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.card')).filter(function (c) { return c.dataset.id === id; });
+    cards.forEach(function (c) { c.classList.add('active'); });
+    var target = fromDoc ? cards[0] : s;
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (target) target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+  }
+
+  var show = { danger: true, risk: true, safe: false };
+  function applyFilter() {
+    var d = $('doc');
+    ['danger', 'risk', 'safe'].forEach(function (k) {
+      d.classList.toggle('show-' + k, show[k]);
+      d.classList.toggle('hide-' + k, !show[k]);
+      $('chip-' + k).setAttribute('aria-pressed', String(show[k]));
+    });
+    document.querySelectorAll('.card').forEach(function (c) { c.hidden = !show[c.dataset.level]; });
+  }
+  ['danger', 'risk', 'safe'].forEach(function (k) {
+    $('chip-' + k).addEventListener('click', function () { show[k] = !show[k]; applyFilter(); });
+  });
+
+  function run(raw) {
+    state.raw = raw;
+    state.result = A.analyze(raw);
+    renderSummary(state.result);
+    renderDoc(state.result);
+    renderCards(state.result);
+    renderChecks(state.result);
+    applyFilter();
+    setEditing(false);
+  }
+
+  function setEditing(on) {
+    $('doc').hidden = on;
+    $('editor').hidden = !on;
+    if (on) { $('src').value = state.raw; $('src').focus(); }
+  }
+
+  $('btn-sample').addEventListener('click', function () { run(SAMPLE); });
+  $('btn-edit').addEventListener('click', function () { setEditing(true); });
+  $('btn-cancel').addEventListener('click', function () { setEditing(false); });
+  $('btn-run').addEventListener('click', function () { run($('src').value); });
+  $('file-in').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () { run(String(r.result)); };
+    r.readAsText(f, 'utf-8');
+    e.target.value = '';
+  });
+
+  // ---------- модель эффекта ----------
+  var NS = 'http://www.w3.org/2000/svg';
+  function f2(v) { return v.toFixed(2).replace('.', ','); }
+  function pc(v) { return Math.round(v * 100) + '%'; }
+  function svgEl(tag, attrs, text) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function drawModel() {
+    var p = +$('r-p').value / 100, q = +$('r-q').value / 100;
+    var after = 1 - (1 - p) * (1 - q);
+    $('o-p').textContent = pc(p);
+    $('o-q').textContent = pc(q);
+    $('formula').textContent =
+      'P после = 1 − (1 − P до) × (1 − Q)\n' +
+      'P после = 1 − (1 − ' + f2(p) + ') × (1 − ' + f2(q) + ')\n' +
+      'P после = 1 − ' + f2(1 - p) + ' × ' + f2(1 - q) + ' = 1 − ' + f2((1 - p) * (1 - q)) + ' = ' + f2(after);
+    $('b-before').textContent = pc(p);
+    $('b-after').textContent = pc(after);
+    $('f-before').style.width = (p * 100) + '%';
+    $('f-after').style.width = (after * 100) + '%';
+
+    var W = 480, H = 280, L = 44, Rr = 20, T = 16, B = 40;
+    var x = function (v) { return L + v * (W - L - Rr); };
+    var y = function (v) { return H - B - v * (H - T - B); };
+    var svg = $('chart');
+    svg.replaceChildren();
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (t) {
+      svg.appendChild(svgEl('line', { x1: L, x2: W - Rr, y1: y(t), y2: y(t), class: 'axis' }));
+      svg.appendChild(svgEl('text', { x: L - 8, y: y(t) + 4, 'text-anchor': 'end' }, pc(t)));
+      svg.appendChild(svgEl('text', { x: x(t), y: H - B + 18, 'text-anchor': 'middle' }, pc(t)));
+    });
+    svg.appendChild(svgEl('text', { x: (L + W - Rr) / 2, y: H - 6, 'text-anchor': 'middle' }, 'Q: доля опасных пунктов, найденных классификатором'));
+    [0.1, 0.5].forEach(function (pp) {
+      svg.appendChild(svgEl('line', { x1: x(0), y1: y(pp), x2: x(1), y2: y(1), class: 'ref' }));
+    });
+    svg.appendChild(svgEl('text', { x: x(0) + 6, y: y(0.1) + 14 }, 'P до = 10%'));
+    svg.appendChild(svgEl('text', { x: x(0) + 6, y: y(0.5) - 6 }, 'P до = 50%'));
+    svg.appendChild(svgEl('line', { x1: x(0), y1: y(p), x2: x(1), y2: y(1), class: 'cur' }));
+    svg.appendChild(svgEl('circle', { cx: x(q), cy: y(after), r: 6, class: 'dot' }));
+    var lx = q > 0.7 ? x(q) - 10 : x(q) + 10;
+    svg.appendChild(svgEl('text', { x: lx, y: y(after) + (q > 0.7 ? 26 : -12), 'text-anchor': q > 0.7 ? 'end' : 'start', class: 'lbl-cur' }, 'P после = ' + pc(after)));
+  }
+  $('r-p').addEventListener('input', drawModel);
+  $('r-q').addEventListener('input', drawModel);
+
+  // ---------- таблица правил ----------
+  var tb = document.querySelector('#rules-table tbody');
+  A.RULES.slice().sort(function (a, b) { return (a.level === 'danger' ? 0 : 1) - (b.level === 'danger' ? 0 : 1); }).forEach(function (r) {
+    var tr = el('tr');
+    var td1 = el('td'); td1.appendChild(el('span', 'tag ' + r.level, LV[r.level]));
+    tr.appendChild(td1);
+    tr.appendChild(el('td', null, r.title));
+    tr.appendChild(el('td', 'mono', r.law));
+    tb.appendChild(tr);
+  });
+
+  drawModel();
+  run(SAMPLE);
+})();
+</script>
+
+</body>
+</html>
